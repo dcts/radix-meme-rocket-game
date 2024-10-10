@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spaceship Game</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #141414;
+      }
+
+      #spaceship {
+        position: absolute;
+        z-index: 100;
+        width: 400px;
+        height: 400px;
+        background-image: url("https://github.com/user-attachments/assets/dc234632-5578-4dc7-8b15-cf0c3ade7c5a");
+        background-size: contain;
+        background-repeat: no-repeat;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(0deg);
+      }
+
+      .star {
+        position: absolute;
+        background-color: white;
+        border-radius: 50%;
+        opacity: 0.8;
+        animation: glow 2s infinite alternate;
+      }
+
+      /* Keyframe animation for glowing stars */
+      @keyframes glow {
+        0% {
+          opacity: 0.4;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      #myImage {
+        position: absolute;
+        left: 13%; /* Approx. 1/3 from the left */
+        top: 50%; /* Center on the Y-axis */
+        transform: translateY(-50%); /* Adjust for vertical centering */
+        max-width: 500px; /* Adjust the image size as needed */
+        display: none; /* Hide initially */
+      }
+
+      #controlMessage {
+        position: absolute;
+        top: 10px; /* Slightly below the top */
+        left: 50%;
+        transform: translateX(-50%); /* Center horizontally */
+        background-color: rgba(
+          255,
+          255,
+          255,
+          0.8
+        ); /* Semi-transparent white background */
+        padding: 10px 20px;
+        border-radius: 20px; /* Rounded corners */
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        color: #141414; /* Dark text color */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Slight shadow for a floating effect */
+        /* display: none; */
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #141414;
+      }
+
+      #gameContent {
+        filter: blur(10px); /* Initial blur */
+        pointer-events: none; /* Prevent interaction while blurred */
+        transition: filter 0.5s ease; /* Smooth transition to remove blur */
+      }
+
+      #playButton {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px 40px;
+        background-color: #141414;
+        color: white;
+        border: 2px solid white;
+        border-radius: 10px;
+        cursor: pointer;
+        font-family: Arial, sans-serif;
+        font-size: 24px;
+        z-index: 1000; /* Ensure the play button is above all other content */
+      }
+
+      #audioControlButton {
+        position: absolute;
+        top: 50px; /* Below the control message */
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        background-color: #141414;
+        color: white;
+        border: 2px solid white;
+        border-radius: 20px;
+        cursor: pointer;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        display: none; /* Initially hidden */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameContent">
+      <div id="controlMessage">Control Rocket with arrow keys</div>
+
+      <!-- Audio element -->
+      <audio id="backgroundAudio" loop>
+        <source src="radix-meme-rocket.mp3" type="audio/mpeg" />
+        Your browser does not support the audio element.
+      </audio>
+
+      <!-- Button to control audio -->
+      <button id="audioControlButton">Pause Music</button>
+
+      <!-- Your existing spaceship and stars content goes here -->
+      <div id="spaceship"></div>
+      <img
+        id="myImage"
+        src="https://github.com/user-attachments/assets/df5b295b-6b26-4dbb-8b3e-67cf56f74974"
+        alt="Image"
+      />
+    </div>
+
+    <!-- Play button to start the game -->
+    <div id="playButton">PLAY</div>
+
+    <script>
+      const spaceship = document.getElementById("spaceship");
+
+      // Function to rotate the spaceship
+      function rotateSpaceship(degrees) {
+        rotation = (rotation + degrees) % 360;
+        spaceship.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+      }
+
+      // Function to move the spaceship
+      // let posX = window.innerWidth / 2;
+      let posX = (window.innerWidth / 3) * 2; // Start at 2/3 of the screen width
+
+      let posY = window.innerHeight / 2;
+      let rotation = 0;
+      let speed = 0;
+      const maxSpeed = 20;
+      let acceleration = 0.2; // Acceleration rate
+      let deceleration = 0.05; // Deceleration rate
+      let isAccelerating = false;
+      let isDecelerating = false;
+
+      function moveSpaceship() {
+        // Accelerate when pressing ArrowUp
+        if (isAccelerating) {
+          if (speed < maxSpeed) {
+            speed += acceleration; // Increase speed
+          }
+        } else {
+          // Decelerate when ArrowUp is released or ArrowDown is pressed
+          if (isDecelerating || speed > 0) {
+            speed -= deceleration; // Decrease speed gradually
+            if (speed < 0) speed = 0; // Stop at 0 speed
+          }
+        }
+
+        // Move the spaceship
+        const rad = (rotation * Math.PI) / 180;
+        const dx = Math.sin(rad) * speed;
+        const dy = -Math.cos(rad) * speed;
+
+        // Update position with screen wrapping
+        posX = (posX + dx + window.innerWidth) % window.innerWidth;
+        posY = (posY + dy + window.innerHeight) % window.innerHeight;
+
+        // Set new spaceship position
+        spaceship.style.left = `${posX}px`;
+        spaceship.style.top = `${posY}px`;
+      }
+
+      // Handle key press events for controlling the spaceship
+      function handleKeyDown(event) {
+        if (event.key === "ArrowUp") {
+          isAccelerating = true; // Start accelerating
+        } else if (event.key === "ArrowDown") {
+          isDecelerating = true; // Start decelerating
+        } else if (event.key === "ArrowLeft") {
+          rotateSpaceship(-5); // Rotate left
+        } else if (event.key === "ArrowRight") {
+          rotateSpaceship(5); // Rotate right
+        }
+      }
+
+      // Handle key release events
+      function handleKeyUp(event) {
+        if (event.key === "ArrowUp") {
+          isAccelerating = false; // Stop accelerating
+        } else if (event.key === "ArrowDown") {
+          isDecelerating = false; // Stop decelerating
+        }
+      }
+
+      // Rotate the spaceship
+      function rotateSpaceship(degrees) {
+        rotation = (rotation + degrees) % 360;
+        spaceship.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+      }
+
+      // Listen for key press and release events
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+
+      function createStars(numStars) {
+        for (let i = 0; i < numStars; i++) {
+          const star = document.createElement("div");
+          const size = Math.random() * 3 + 1; // Random size between 1px and 4px
+          const posX = Math.random() * window.innerWidth; // Random X position
+          const posY = Math.random() * window.innerHeight; // Random Y position
+
+          // Apply styles to the star
+          star.classList.add("star");
+          star.style.width = `${size}px`;
+          star.style.height = `${size}px`;
+          star.style.left = `${posX}px`;
+          star.style.top = `${posY}px`;
+
+          // Append the star to the body
+          document.body.appendChild(star);
+        }
+      }
+
+      // Game loop to update the spaceship's position
+      function gameLoop() {
+        moveSpaceship();
+        requestAnimationFrame(gameLoop);
+      }
+
+      rotateSpaceship(50);
+      createStars(500);
+
+      // Play and Audio logic
+      const playButton = document.getElementById("playButton");
+      const gameContent = document.getElementById("gameContent");
+      const audio = document.getElementById("backgroundAudio");
+      const audioControlButton = document.getElementById("audioControlButton");
+      const controlMessage = document.getElementById("controlMessage");
+      const myImage = document.getElementById("myImage");
+
+      // Event listener for the play button
+      playButton.addEventListener("click", function () {
+        // Play the background audio
+        audio
+          .play()
+          .then(() => {
+            // Hide the play button and show the control message and audio control button
+            playButton.style.display = "none";
+            controlMessage.style.display = "block";
+            audioControlButton.style.display = "block";
+
+            // Remove the blur effect
+            gameContent.style.filter = "none";
+            gameContent.style.pointerEvents = "all"; // Enable interactions with the game
+
+            // Show the image correctly after blur is removed
+            setTimeout(() => {
+              myImage.style.display = "block";
+            }, 500);
+          })
+          .catch((error) => {
+            console.error("Error playing audio:", error);
+          });
+      });
+
+      // Toggle audio play/pause with the audio control button
+      audioControlButton.addEventListener("click", function () {
+        if (audio.paused) {
+          audio.play();
+          audioControlButton.textContent = "Pause Music";
+        } else {
+          audio.pause();
+          audioControlButton.textContent = "Play Music";
+        }
+      });
+
+      // Start the game loop
+      gameLoop();
+    </script>
+  </body>
+</html>
